@@ -30,4 +30,19 @@ class UserRepositoryTest extends TestCase
         $this->assertEquals('test11', $user->username);
         $this->assertTrue(Hash::check('12345678', $user->password));
     }
+
+    public function test_finds_by_username()
+    {
+        User::factory()->create();
+        $user = $this->repo->findByUsername('test');
+        $this->assertInstanceOf(User::class, $user);
+        $this->assertEquals(1, $user->id);
+        $this->assertEquals('test', $user->username);
+    }
+
+    public function test_returns_null_if_user_wasnt_found_by_username()
+    {
+        $user = $this->repo->findByUsername('test');
+        $this->assertNull($user);
+    }
 }

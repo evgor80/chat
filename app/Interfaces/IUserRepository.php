@@ -14,4 +14,11 @@ interface IUserRepository
      */
     public function save(UserDto $user);
 
+    /**
+     * Find a user by specified username
+     * 
+     * @param string $username
+     * @return \App\Models\User|null
+     */
+    public function findByUsername(string $username);
 }

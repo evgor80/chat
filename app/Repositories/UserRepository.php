@@ -18,5 +18,8 @@ class UserRepository implements IUserRepository
         return $new_user;
     }
 
-
+    public function findByUsername(string $username)
+    {
+        return User::where('username', $username)->first();
+    }
 }

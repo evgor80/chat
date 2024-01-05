@@ -71,4 +71,65 @@ class UserControllerTest extends TestCase
                     ->whereType('data', 'array')
             );
     }   
+
+    public function test_logs_user_in()
+    {
+        User::factory()->create();
+        $response = $this->postJson(
+            '/api/v1/users/login',
+            [
+                'username' => 'test',
+                'password' => '12345678',
+            ]
+        );
+        $response
+            ->assertStatus(200)
+            ->assertJson(
+                fn(AssertableJson $json) =>
+                $json->where('data.user', 'test')
+                    ->where('message', 'Вход выполнен.')
+                    ->where('status', 'success')
+                    ->whereType('data.token', 'string')
+            );
+    }
+
+    public function test_doesnt_login_if_credentials_invalid()
+    {
+
+        User::factory()->create();
+        $response = $this->postJson(
+            '/api/v1/users/login',
+            [
+                'username' => 'test1',
+                'password' => '12345678',
+            ]
+        );
+        $response
+            ->assertStatus(401)
+            ->assertJson(
+                fn(AssertableJson $json) =>
+                $json->where('message', 'Unauthorised.')
+                    ->where('status', 'failed')
+                    ->where('data.error.0', 'Неверное имя пользователя или пароль')
+            );
+    }
+
+    public function test_doesnt_login_if_validation_failed()
+    {
+        $response = $this->postJson(
+            '/api/v1/users/login',
+            [
+                'username' => 'te',
+                'password' => '1234567',
+            ]
+        );
+        $response
+            ->assertStatus(422)
+            ->assertJson(
+                fn(AssertableJson $json) =>
+                $json->where('message', 'Недопустимые данные.')
+                    ->where('status', 'failed')
+                    ->whereType('data', 'array')
+            );
+    }
 }
