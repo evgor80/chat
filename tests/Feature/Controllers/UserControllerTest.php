@@ -132,4 +132,54 @@ class UserControllerTest extends TestCase
                     ->whereType('data', 'array')
             );
     }
+
+    public function test_confirms_username_is_available()
+    {
+        $response = $this->postJson(
+            '/api/v1/users/name',
+            ['name' => 'test']
+        );
+        $response
+            ->assertStatus(200)
+            ->assertJson(
+                fn(AssertableJson $json) =>
+                $json->where('message', 'Имя не занято.')
+                    ->where('status', 'success')
+                    ->where('data.name', 'test')
+            );
+    }
+
+    public function test_returns_422_status_if_username_wasnt_provided(): void
+    {
+        $response = $this->postJson(
+            '/api/v1/users/name',
+            []
+        );
+        $response
+            ->assertStatus(422)
+            ->assertJson(
+                fn(AssertableJson $json) =>
+                $json->where('message', 'Недопустимые данные.')
+                    ->where('status', 'failed')
+                    ->whereType('data', 'array')
+            );
+    }
+
+    public function test_returns_409_status_if_username_is_occupied()
+    {
+        User::factory()->create();
+        $response = $this->postJson(
+            '/api/v1/users/name',
+            ['name' => 'test']
+        );
+        $response
+            ->assertStatus(409)
+            ->assertJson(
+                fn(AssertableJson $json) =>
+                $json->where('message', 'Имя занято')
+                    ->where('status', 'failed')
+                    ->whereType('data', 'array')
+            );
+
+    }
 }

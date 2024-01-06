@@ -8,6 +8,7 @@ use App\Interfaces\IUserService;
 use App\DTO\UserDto;
 use App\Http\Requests\LoginUserRequest;
 use App\DTO\LoginDto;
+use App\Http\Requests\UsernameAvailabilityRequest;
 
 class UserController extends BaseController
 {
@@ -47,6 +48,21 @@ class UserController extends BaseController
         $success = $this->userService->login($dto);
 
         return $this->sendResponse($success, 'Вход выполнен.');
+    }
+
+    /**
+     * Check that a specified username is not occupied.
+     *
+     * @param  \App\Http\Requests\UsernameAvailabilityRequest $request
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function checkUsernameAvailability(UsernameAvailabilityRequest $request)
+    {
+        $success = [];
+        $name = $request->name;
+        $success['name'] = $name;
+
+        return $this->sendResponse($success, 'Имя не занято.');
     }
 
     /**

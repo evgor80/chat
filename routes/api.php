@@ -16,3 +16,4 @@ use App\Http\Controllers\API\UserController;
 
 Route::post('/users', [UserController::class, 'store']);
 Route::post('/users/login', [UserController::class, 'login']);
+Route::post('/users/name', [UserController::class, 'checkUsernameAvailability']);
