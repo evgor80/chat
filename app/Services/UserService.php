@@ -48,6 +48,11 @@ class UserService implements IUserService
         return $success;
     }
 
+    public function getUserById(int $id)
+    {
+        return $this->userRepository->findById($id);
+    }
+
     /**
      * Check if raw password value matches hashed password value
      * 

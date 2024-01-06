@@ -23,4 +23,12 @@ interface IUserService
      * @throws \App\Exceptions\FailedRequestException
      */
     public function login(LoginDto $user);
+
+    /**
+     * Find a user with specified id.
+     * 
+     * @param int $id
+     * @return \App\Models\User
+     */
+    public function getUserById(int $id);
 }

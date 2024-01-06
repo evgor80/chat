@@ -55,4 +55,13 @@ class UserServiceTest extends TestCase
             $this->assertSame('Неверное имя пользователя или пароль', $e->errorMessages->toArray()['error'][0]);
         }
     }
+
+    public function test_gets_user_by_id()
+    {
+        User::factory()->create();
+        $user = $this->service->getUserById(1);
+        $this->assertInstanceOf(User::class, $user);
+        $this->assertEquals('1', $user->id);
+        $this->assertEquals('test', $user->username);
+    }
 }

@@ -8,6 +8,7 @@ use App\Models\User;
 use Illuminate\Foundation\Testing\DatabaseMigrations;
 use Tests\TestCase;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
 
 class UserRepositoryTest extends TestCase
 {
@@ -44,5 +45,23 @@ class UserRepositoryTest extends TestCase
     {
         $user = $this->repo->findByUsername('test');
         $this->assertNull($user);
+    }
+
+    public function test_finds_by_id()
+    {
+        User::factory()->create();
+        $user = $this->repo->findById(1);
+        $this->assertInstanceOf(User::class, $user);
+        $this->assertEquals(1, $user->id);
+        $this->assertEquals('test', $user->username);
+    }
+
+    public function test_throws_exception_if_user_wasnt_found_by_id(): void
+    {
+        try {
+            $this->repo->findById(1);
+        } catch (\Exception $e) {
+            $this->assertInstanceOf(ModelNotFoundException::class, $e);
+        }
     }
 }

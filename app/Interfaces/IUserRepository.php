@@ -21,4 +21,13 @@ interface IUserRepository
      * @return \App\Models\User|null
      */
     public function findByUsername(string $username);
+
+     /**
+     * Find a user by specified id, otherwise throw exception
+     * 
+     * @param int $id
+     * @return \App\Models\User
+     * @throws \Illuminate\Database\Eloquent\ModelNotFoundException
+     */
+    public function findById(int $id);
 }

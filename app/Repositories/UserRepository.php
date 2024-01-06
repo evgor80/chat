@@ -22,4 +22,9 @@ class UserRepository implements IUserRepository
     {
         return User::where('username', $username)->first();
     }
+
+    public function findById(int $id)
+    {
+        return User::findOrFail($id);
+    }
 }
