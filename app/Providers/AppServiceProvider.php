@@ -7,6 +7,10 @@ use App\Repositories\UserRepository;
 use App\Services\UserService;
 use App\Interfaces\IUserRepository;
 use App\Interfaces\IUserService;
+use App\Interfaces\IRoomRepository;
+use App\Repositories\RoomRepository;
+use App\Interfaces\IRoomService;
+use App\Services\RoomService;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -17,6 +21,8 @@ class AppServiceProvider extends ServiceProvider
     {
         $this->app->bind(IUserRepository::class, UserRepository::class);
         $this->app->bind(IUserService::class, UserService::class);
+        $this->app->bind(IRoomRepository::class, RoomRepository::class);
+        $this->app->bind(IRoomService::class, RoomService::class);
     }
 
     /**
