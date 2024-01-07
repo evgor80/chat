@@ -30,4 +30,11 @@ interface IRoomRepository
      * @throws \Illuminate\Database\Eloquent\ModelNotFoundException
      */
     public function findOneBySlug(string $slug);
+
+    /**
+     * Get a list of all chat rooms
+     * 
+     * @return \Illuminate\Support\Collection<\App\Models\Room|null>
+     */
+    public function getAll();
 }

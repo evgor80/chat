@@ -30,4 +30,9 @@ class RoomRepository implements IRoomRepository
     {
         return Room::withCount('messages as messages')->where('slug', $slug)->firstOrFail();
     }
+
+    public function getAll()
+    {
+        return Room::withCount('messages')->get();
+    }
 }

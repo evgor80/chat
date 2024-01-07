@@ -67,4 +67,17 @@ class RoomRepositoryTest extends TestCase
             $this->assertInstanceOf(ModelNotFoundException::class, $e);
         }
     }
+
+    public function test_gets_all_rooms(): void
+    {
+        $new_rooms = Room::factory()->count(3)->sequence(
+            ['name' => 'First', 'slug' => 'first'],
+            ['name' => 'Second', 'slug' => 'second'],
+            ['name' => 'Third', 'slug' => 'third']
+        )->create();
+        $new_rooms[0]->messages()->create(['user_id' => 1, 'type' => 'message', 'text' => 'test']);
+        $rooms = $this->repo->getAll();
+        $this->assertCount(3, $rooms);
+        $this->assertCount(1, $rooms[0]->messages);
+    }
 }
