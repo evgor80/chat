@@ -86,4 +86,53 @@ class RoomControllerTest extends TestCase
                     ->whereType('data', 'array')
             );
     }
+
+    public function test_confirms_name_is_available()
+    {
+        $response = $this->withHeader('Authorization', 'Bearer ' . $this->token)->postJson(
+            '/api/v1/rooms/name',
+            ['name' => 'test']
+        );
+        $response
+            ->assertStatus(200)
+            ->assertJson(
+                fn(AssertableJson $json) =>
+                $json->where('message', 'Название не занято.')
+                    ->where('status', 'success')
+                    ->where('data.name', 'test')
+            );
+    }
+
+    public function test_returns_422_status_if_name_wasnt_provided(): void
+    {
+        $response = $this->withHeader('Authorization', 'Bearer ' . $this->token)->postJson(
+            '/api/v1/rooms/name',
+            []
+        );
+        $response
+            ->assertStatus(422)
+            ->assertJson(
+                fn(AssertableJson $json) =>
+                $json->where('message', 'Недопустимые данные.')
+                    ->where('status', 'failed')
+                    ->whereType('data', 'array')
+            );
+    }
+
+    public function test_returns_409_status_if_name_is_occupied()
+    {
+        Room::factory()->create();
+        $response = $this->withHeader('Authorization', 'Bearer ' . $this->token)->postJson(
+            '/api/v1/rooms/name',
+            ['name' => 'Main']
+        );
+        $response
+            ->assertStatus(409)
+            ->assertJson(
+                fn(AssertableJson $json) =>
+                $json->where('message', 'Название занято')
+                    ->where('status', 'failed')
+                    ->whereType('data', 'array')
+            );
+    }
 }

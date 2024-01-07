@@ -39,6 +39,21 @@ class RoomController extends BaseController
     }
 
     /**
+     * Check that a specified room name is not occupied.
+     *
+     * @param  \App\Http\Requests\RoomNameAvailabilityRequest  $request
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function checkNameAvailability(RoomNameAvailabilityRequest $request)
+    {
+        $success = [];
+        $name = $request->name;
+        $success['name'] = $name;
+
+        return $this->sendResponse($success, 'Название не занято.');
+    }
+
+    /**
      * Map data from user to DTO
      * 
      * @param array $data Input from user
