@@ -4,6 +4,8 @@ namespace App\Exceptions;
 
 use Illuminate\Foundation\Exceptions\Handler as ExceptionHandler;
 use Throwable;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
+use Illuminate\Support\MessageBag;
 
 class Handler extends ExceptionHandler
 {
@@ -26,5 +28,24 @@ class Handler extends ExceptionHandler
         $this->reportable(function (Throwable $e) {
             //
         });
+    }
+
+    /**
+     * Render an exception into an HTTP response.
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @param  \Throwable  $e
+     * @return \Symfony\Component\HttpFoundation\Response
+     *
+     * @throws FailedRequestException
+     */
+    public function render($request, Throwable $e)
+    {
+        //send custom response if requested model wasn't found
+        if ($e instanceof ModelNotFoundException) {
+            throw new FailedRequestException('Not Found', new MessageBag(['error' => 'Запрошенный ресурс не найден']), 404);
+        }
+
+        return parent::render($request, $e);
     }
 }
