@@ -64,4 +64,12 @@ class RoomServiceTest extends TestCase
         );
         $this->assertEquals('test_1', $room->slug);
     }
+
+    public function test_finds_one_by_slug(): void
+    {
+        Room::factory()->create();
+        $room = $this->service->getBySlug('main');
+        $this->assertEquals('Main', $room->name);
+        $this->assertEquals(1, $room->id);
+    }
 }

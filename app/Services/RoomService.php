@@ -30,6 +30,11 @@ class RoomService implements IRoomService
         return $this->roomRepository->save($room);
     }
 
+    public function getBySlug(string $slug)
+    {
+        return $this->roomRepository->findOneBySlug($slug);
+    }
+
     /**
      * Generate unique slug for url address from given chatroom's name
      * 

@@ -21,6 +21,23 @@ class RoomController extends BaseController
     }
 
     /**
+     * Return a chat room by its slug.
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function show(string $slug)
+    {
+        $room = $this->roomService->getBySlug($slug);
+
+        return $this->sendResponse(
+            ['room' => $room],
+            'Чат найден.',
+            200
+        );
+    }
+
+    /**
      * Store a new chat room and return it.
      *
      * @param  \App\Http\Requests\StoreRoomRequest $request

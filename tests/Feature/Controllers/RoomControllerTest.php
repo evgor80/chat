@@ -135,4 +135,31 @@ class RoomControllerTest extends TestCase
                     ->whereType('data', 'array')
             );
     }
+
+    public function test_shows_single_room(): void
+    {
+        Room::factory()->create();
+        $response = $this->withHeader('Authorization', 'Bearer ' . $this->token)->getJson('/api/v1/rooms/main');
+        $response
+            ->assertStatus(200)
+            ->assertJson(
+                fn(AssertableJson $json) =>
+                $json->where('message', 'Чат найден.')
+                    ->where('status', 'success')
+                    ->where('data.room.name', 'Main')
+            );
+    }
+
+    public function test_returns_404_code_if_room_wasnt_found(): void
+    {
+        $response = $this->withHeader('Authorization', 'Bearer ' . $this->token)->getJson('/api/v1/rooms/main');
+        $response
+            ->assertStatus(404)
+            ->assertJson(
+                fn(AssertableJson $json) =>
+                $json->where('message', 'Not Found')
+                    ->where('status', 'failed')
+                    ->where('data.error.0', 'Запрошенный ресурс не найден')
+            );
+    }
 }

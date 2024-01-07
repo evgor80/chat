@@ -7,6 +7,8 @@ use App\Interfaces\IRoomRepository;
 use App\Models\Room;
 use Illuminate\Foundation\Testing\DatabaseMigrations;
 use Tests\TestCase;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
+
 
 class RoomRepositoryTest extends TestCase
 {
@@ -47,5 +49,22 @@ class RoomRepositoryTest extends TestCase
     {
         $is_exist = $this->repo->exists('main');
         $this->assertFalse($is_exist);
+    }
+
+    public function test_finds_one_by_slug(): void
+    {
+        Room::factory()->create();
+        $room = $this->repo->findOneBySlug('main');
+        $this->assertEquals('Main', $room->name);
+        $this->assertEquals(1, $room->id);
+    }
+
+    public function test_throws_exception_if_room_wasnt_found_by_slug(): void
+    {
+        try {
+            $this->repo->findOneBySlug('main');
+        } catch (\Exception $e) {
+            $this->assertInstanceOf(ModelNotFoundException::class, $e);
+        }
     }
 }

@@ -13,4 +13,12 @@ interface IRoomService
      * @return \App\Models\Room
      */
     public function registerRoom(RoomDto $room);
+
+    /**
+     * Find a room by specified slug
+     * 
+     * @param string $slug
+     * @return \App\Models\Room
+     */
+    public function getBySlug(string $slug);
 }

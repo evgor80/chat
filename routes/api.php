@@ -21,4 +21,5 @@ Route::post('/users/name', [UserController::class, 'checkUsernameAvailability'])
 Route::middleware(['is_authenticated'])->group(function () {
     Route::post('/rooms', [RoomController::class, 'store']);
     Route::post('/rooms/name', [RoomController::class, 'checkNameAvailability']);
+    Route::get('/rooms/{slug}', [RoomController::class, 'show']);
 });

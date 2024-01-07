@@ -21,4 +21,13 @@ interface IRoomRepository
      * @return bool
      */
     public function exists(string $slug);
+
+    /**
+     * Find a room by specified slug
+     * 
+     * @param string $slug
+     * @return \App\Models\Room
+     * @throws \Illuminate\Database\Eloquent\ModelNotFoundException
+     */
+    public function findOneBySlug(string $slug);
 }

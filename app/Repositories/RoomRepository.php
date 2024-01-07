@@ -25,4 +25,9 @@ class RoomRepository implements IRoomRepository
     {
         return Room::where('slug', $slug)->exists();
     }
+
+    public function findOneBySlug(string $slug)
+    {
+        return Room::withCount('messages as messages')->where('slug', $slug)->firstOrFail();
+    }
 }
