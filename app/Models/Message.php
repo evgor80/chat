@@ -2,11 +2,11 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
-use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
-class Room extends Model
+class Message extends Model
 {
     use HasFactory;
 
@@ -16,10 +16,9 @@ class Room extends Model
      * @var array<int, string>
      */
     protected $fillable = [
-        'name',
-        'slug',
-        'private',
-        'password',
+        'text',
+        'type',
+        'user_id'
     ];
 
     /**
@@ -28,14 +27,13 @@ class Room extends Model
      * @var array<int, string>
      */
     protected $hidden = [
-        'password',
+        'user_id',
+        'room_id',
+        'updated_at'
     ];
 
-    /**
-     * Get the messages for the chat room.
-     */
-    public function messages(): HasMany
+    public function author(): BelongsTo
     {
-        return $this->hasMany(Message::class);
+        return $this->belongsTo(User::class, 'user_id');
     }
 }
