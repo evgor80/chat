@@ -160,4 +160,12 @@ class WebSocketControllerTest extends TestCase
             ]));
         $this->controller->onMessage($this->conn, $msg);
     }
+
+    public function test_closes_connection(): void
+    {
+        $this->mock(IChatService::class)->shouldReceive('removeUser')->once();
+
+        $controller = app(WebSocketController::class);
+        $controller->onClose($this->conn);
+    }
 }

@@ -35,4 +35,12 @@ interface IChatService
      * @throws \App\Exceptions\NotAuthorizedException
      */
     public function addUser(ConnectionInterface $conn, array $message);
+
+    /**
+     * Find corresponding chat room and remove the user from a list of connected users and subscribers to updates
+     * 
+     * @param \Ratchet\ConnectionInterface $conn Socket of leaving user
+     * @return void
+     */
+    public function removeUser(ConnectionInterface $conn);
 }

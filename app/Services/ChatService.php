@@ -107,6 +107,55 @@ class ChatService implements IChatService
         ];
     }
 
+    public function removeUser(ConnectionInterface $conn)
+    {
+        //unsubscribe a user from updates
+        $this->subscribersToUpdates->detach($conn);
+        /**
+         * iterate over each chat room in the map and every user's sequence, check does it have specified socket.
+         * If socket is found, delete it from the sequence. If this is only connection for this user, delete the user from room and generate a message and send it to other users in this room.
+         * If room that user leaved was found, return updated info for this room.
+         */
+        $leavedRoom = '';
+        foreach ($this->rooms as $room => $map) {
+            foreach ($map as $user => $connections) {
+                //find, if sequence with user's connection has given connection
+                $i = $connections->find($conn);
+                //if it has
+                //if index wasn't found, php-ds/php-ds polyfill returns null, native extension returns false
+                if (isset($i) && $i !== false) {
+                    //remove connection from the sequense
+                    $connections->remove($i);
+                    //if this was the only connection of this user
+                    if (count($connections) === 0) {
+                        //remove the user from the chatroom's map
+                        $this->rooms[$room]->remove($user);
+                        $leavedRoom = $room;
+                        $connUsers = $this->getConnectedUsers($room);
+                        $msg = json_encode(
+                            [
+                                "type" => 'user-leave',
+                                'members' => $connUsers,
+                                'message' => ['user' => $user, 'type' => 'leave']
+                            ]
+                        );
+                        //send message about user leave all connections in this room
+                        foreach ($map as $username => $connections) {
+                            foreach ($connections as $c) {
+                                $c->send($msg);
+                            }
+                        }
+                    }
+
+                }
+            }
+        }
+        //if leaved room was found, send subscribers updated info about this room
+        if ($leavedRoom) {
+            $this->notifySubscribersToUpdates($leavedRoom);
+        }
+    }
+
     /**
      * Check that jwt-token is valid and find and return a user by id from the token
      * 

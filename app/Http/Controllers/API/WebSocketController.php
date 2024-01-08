@@ -31,6 +31,7 @@ class WebSocketController extends Controller implements MessageComponentInterfac
 
     public function onClose(ConnectionInterface $conn)
     {
+        $this->chatService->removeUser($conn);
     }
 
     public function onMessage(ConnectionInterface $from, $msg)
@@ -73,7 +74,6 @@ class WebSocketController extends Controller implements MessageComponentInterfac
             $from->send(json_encode(["type" => "500"]));
         }
     }
-
     public function onError(ConnectionInterface $conn, Exception $e)
     {
         error_log("An error has occurred: " . $e->getMessage() . "\n");

@@ -220,4 +220,74 @@ class ChatServiceTest extends TestCase
         $conn->shouldReceive('send')->never();
         $this->service->addUser($conn, $msg);
     }
+
+    public function test_removes_user_and_informs_other_users_in_this_room(): void
+    {
+        Room::factory()->create();
+        $user = User::factory()->create(['username' => 'test11']);
+        $token = JwToken::generateJwt($user);
+        $conn = Mockery::mock(ConnectionInterface::class);
+        /**
+         * @var \Ratchet\ConnectionInterface&\Mockery\MockInterface $conn
+         */
+        $conn->shouldReceive('send')->once();
+        $msg = [
+            'token' => $token,
+            'room' => 'Main',
+            'password' => '12345678'
+        ];
+        $this->service->addUser($conn, $msg);
+        /**
+         * @var \Ratchet\ConnectionInterface&\Mockery\MockInterface $conn1
+         */
+        $conn1 = Mockery::mock(ConnectionInterface::class);
+        $msg1 = [
+            'token' => $this->token,
+            'room' => 'Main',
+            'password' => '12345678'
+        ];
+        $this->service->addUser($conn1, $msg1);
+        $conn1->shouldReceive('send')->once()->with(json_encode([
+            "type" => 'user-leave',
+            'members' => ['test'],
+            'message' => ['user' => 'test11', 'type' => 'leave']
+        ]));
+        $this->service->removeUser($conn);
+    }
+
+    public function test_doesnt_informs_other_users_in_this_room_if_only_one_of_user_several_sockets_was_closed(): void
+    {
+        Room::factory()->create();
+        $user = User::factory()->create(['username' => 'test11']);
+        $token = JwToken::generateJwt($user);
+        /**
+         * @var \Ratchet\ConnectionInterface&\Mockery\MockInterface $conn
+         */
+        $conn = Mockery::mock(ConnectionInterface::class);
+        /**
+         * @var \Ratchet\ConnectionInterface&\Mockery\MockInterface $conn1
+         */
+        $conn1 = Mockery::mock(ConnectionInterface::class);
+        $msg = [
+            'token' => $token,
+            'room' => 'Main',
+            'password' => '12345678'
+        ];
+        $this->service->addUser($conn, $msg);
+        $this->service->addUser($conn1, $msg);
+        /**
+         * @var \Ratchet\ConnectionInterface&\Mockery\MockInterface $conn2
+         */
+        $conn2 = Mockery::mock(ConnectionInterface::class);
+        $msg1 = [
+            'token' => $this->token,
+            'room' => 'Main',
+            'password' => '12345678'
+        ];
+        $conn->shouldReceive('send')->once();
+        $conn1->shouldReceive('send')->once();
+        $this->service->addUser($conn2, $msg1);
+        $conn2->shouldReceive('send')->never();
+        $this->service->removeUser($conn);
+    }
 }
