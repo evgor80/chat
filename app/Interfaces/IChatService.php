@@ -43,4 +43,14 @@ interface IChatService
      * @return void
      */
     public function removeUser(ConnectionInterface $conn);
+
+    /**
+     * Add message for specified chat room and send it to every connected user in this chat room
+     * If message's author is not the user or the user is not connected to specified room, throw exception
+     * 
+     * @param array $msg Decoded message from client
+     * @return void
+     * @throws \App\Exceptions\InvalidAuthorException
+     */
+    public function addMessage(array $msg);
 }

@@ -45,4 +45,16 @@ interface IRoomRepository
      * @return \App\Models\Room|null
      */
     public function findOneByName(string $name);
+
+    /**
+     * Add new message for specified chat room and return it
+     * If chat room wasn't found, throw exception
+     * 
+     * @param string $name Name of chat room where to add the message
+     * @param string $msg Text of new message
+     * @param int $userId ID of message's author
+     * @return \App\Models\Message
+     * @throws \Illuminate\Database\Eloquent\ModelNotFoundException
+     */
+    public function createMessage(string $name, string $msg, int $userId);
 }

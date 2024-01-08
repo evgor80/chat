@@ -15,6 +15,9 @@ use App\Exceptions\ChatRoomNotFoundException;
 use App\Exceptions\NotAuthorizedException;
 use App\Validation\ChatConnectionValidation;
 use Illuminate\Support\Facades\Hash;
+use App\Models\User;
+use App\Exceptions\InvalidAuthorException;
+use App\Utils\MessageSanitizer;
 
 class ChatService implements IChatService
 {
@@ -154,6 +157,33 @@ class ChatService implements IChatService
         if ($leavedRoom) {
             $this->notifySubscribersToUpdates($leavedRoom);
         }
+    }
+
+    public function addMessage(array $msg)
+    {
+        ChatConnectionValidation::validateChatMessageCompletness($msg);
+        $user = $this->authenticate($msg['token']);
+        $roomname = $msg['room'];
+        $this->validateUser($user, $roomname);
+        $sanitizedMessage = MessageSanitizer::sanitize($msg['message']);
+        $createdMsg = $this->roomRepo->createMessage($msg['room'], $sanitizedMessage, $user->id);
+        $newMsg = json_encode([
+            'type' => 'message-broadcast',
+            'message' => [
+                'type' => 'message',
+                'author' => ['username' => $user->username],
+                'text' => $sanitizedMessage,
+                'created_at' => $createdMsg->created_at
+            ]
+        ]);
+        //get sequences of connections for given room
+        $connArrays = $this->rooms[$msg['room']]->values();
+        //send every connection newly created message
+        foreach ($connArrays as $arr) {
+            foreach ($arr as $c)
+                $c->send($newMsg);
+        }
+        $this->notifySubscribersToUpdates($msg['room']);
     }
 
     /**
@@ -300,5 +330,24 @@ class ChatService implements IChatService
         $room = $this->roomRepo->findOneByName($name);
 
         return $this->mapRoom($room);
+    }
+
+    /**
+     * Check that user doesn't try to send a message to chatroom they doesnt subscribed to or that doesn't exist
+     * 
+     * @param \App\Models\User $user
+     * @param string $roomname
+     * @return void
+     * @throws \App\Exceptions\InvalidAuthorException
+     */
+    private function validateUser(User $user, string $roomname)
+    {
+        //If a user tries to send a message to a chat room they doesnt subscribed to or that doesnt exist
+        if (
+            !$this->rooms->hasKey($roomname) ||
+            !$this->rooms[$roomname]->hasKey($user->username)
+        ) {
+            throw new InvalidAuthorException();
+        }
     }
 }

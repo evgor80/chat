@@ -15,6 +15,7 @@ use App\Exceptions\NotAuthorizedException;
 use App\Exceptions\ChatRoomNotFoundException;
 use Mockery;
 use Ratchet\ConnectionInterface;
+use App\Exceptions\InvalidAuthorException;
 
 class ChatServiceTest extends TestCase
 {
@@ -289,5 +290,43 @@ class ChatServiceTest extends TestCase
         $this->service->addUser($conn2, $msg1);
         $conn2->shouldReceive('send')->never();
         $this->service->removeUser($conn);
+    }
+
+    public function test_adds_message(): void
+    {
+        Room::factory()->create();
+        /**
+         * @var \Ratchet\ConnectionInterface&\Mockery\MockInterface $conn
+         */
+        $conn = Mockery::mock(ConnectionInterface::class);
+        $msg = [
+            'token' => $this->token,
+            'room' => 'Main',
+            'password' => '12345678'
+        ];
+        $this->service->addUser($conn, $msg);
+        $message = [
+            'token' => $this->token,
+            'room' => 'Main',
+            'message' => 'hello there'
+        ];
+        $conn->shouldReceive('send')->once()->withArgs(function ($arg) {
+            return str_contains($arg, '{"type":"message-broadcast","message":{"type":"message","author":{"username":"test"},"text":"hello there"');
+        });
+        $this->service->addMessage($message);
+    }
+
+    public function test_doesnt_add_message_and_throws_exception_if_user_didnt_enter_chatroom(): void
+    {
+        try {
+            $message = [
+                'token' => $this->token,
+                'room' => 'Main',
+                'message' =>  'hello there'
+            ];
+            $this->service->addMessage($message);
+        } catch (InvalidAuthorException $e) {
+            $this->assertInstanceOf(InvalidAuthorException::class, $e);
+        }
     }
 }

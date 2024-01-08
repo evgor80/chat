@@ -168,4 +168,30 @@ class WebSocketControllerTest extends TestCase
         $controller = app(WebSocketController::class);
         $controller->onClose($this->conn);
     }
+
+    public function test_returns_new_message(): void
+    {
+        Room::factory()->create();
+        $msg = json_encode([
+            'type' => 'user-joined',
+            'room' => 'Main',
+            'password' => '12345678',
+            'token' => $this->token
+        ]);
+        $this->conn->shouldReceive('send')
+            ->once();
+        $this->controller->onMessage($this->conn, $msg);
+        $new_msg = json_encode([
+            'type' => 'message',
+            'token' => $this->token,
+            'room' => 'Main',
+            'message' => 'Hello!',
+        ]);
+        $this->conn->shouldReceive('send')
+            ->once()
+            ->withArgs(function ($arg) {
+                return str_contains($arg, '{"type":"message-broadcast","message":{"type":"message","author":{"username":"test"},"text":"Hello!"');
+            });
+        $this->controller->onMessage($this->conn, $new_msg);
+    }
 }

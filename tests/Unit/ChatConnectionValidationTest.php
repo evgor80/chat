@@ -48,4 +48,45 @@ class ChatConnectionValidationTest extends TestCase
             $this->assertInstanceOf(InvalidWebSocketMessageException::class, $e);
         }
     }
+
+    public function test_throws_exception_if_add_message_room_property_missing()
+    {
+        try {
+            ChatConnectionValidation::validateChatMessageCompletness([
+                'token' => 'test',
+                'message' => 'Hello!'
+            ]);
+            $this->fail("Exception wasn't thrown");
+        } catch (InvalidWebSocketMessageException $e) {
+            $this->assertInstanceOf(InvalidWebSocketMessageException::class, $e);
+        }
+    }
+
+    public function test_throws_exception_if_add_message_text_property_missing()
+    {
+        try {
+            ChatConnectionValidation::validateChatMessageCompletness([
+                'token' => 'test',
+                'room' => 'Main',
+            ]);
+            $this->fail("Exception wasn't thrown");
+        } catch (InvalidWebSocketMessageException $e) {
+            $this->assertInstanceOf(InvalidWebSocketMessageException::class, $e);
+        }
+    }
+
+    public function test_doesnt_throw_exception_if_all_add_message_properties_present()
+    {
+        try {
+            $this->withoutExceptionHandling();
+            ChatConnectionValidation::validateChatMessageCompletness([
+                'token' => 'test',
+                'room' => 'Main',
+                'message' => 'Hello!',
+            ]);
+            $this->assertTrue(TRUE);
+        } catch (\Exception $e) {
+            $this->fail();
+        }
+    }
 }

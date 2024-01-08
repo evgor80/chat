@@ -8,6 +8,7 @@ use App\Models\Room;
 use Illuminate\Foundation\Testing\DatabaseMigrations;
 use Tests\TestCase;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
+use App\Models\Message;
 
 
 class RoomRepositoryTest extends TestCase
@@ -93,5 +94,23 @@ class RoomRepositoryTest extends TestCase
     {
         $room = $this->repo->findOneByName('test');
         $this->assertNull($room);
+    }
+
+    public function test_creates_message(): void
+    {
+        Room::factory()->create();
+        $msg = $this->repo->createMessage('Main', 'test', 1);
+        $this->assertInstanceOf(Message::class, $msg);
+        $this->assertEquals('test', $msg->text);
+        $this->assertEquals(1, $msg->id);
+    }
+
+    public function test_throws_exception_if_room_doesnt_exist(): void
+    {
+        try {
+            $this->repo->createMessage('Main', 'test', 1);
+        } catch (\Exception $e) {
+            $this->assertInstanceOf(ModelNotFoundException::class, $e);
+        }
     }
 }

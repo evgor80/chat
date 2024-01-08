@@ -45,4 +45,23 @@ class ChatConnectionValidation
             throw new InvalidWebSocketMessageException();
         }
     }
+
+    /**
+     * Validate that a new message provides all required information
+     * 
+     * @param array $message Decoded JSON message object from client socket
+     * @return void
+     * @throws \App\Exceptions\InvalidWebSocketMessageException
+     */
+    public static function validateChatMessageCompletness(array $message)
+    {
+        $validator = Validator::make($message, [
+            'room' => 'required|string',
+            'message' => 'required|string',
+        ]);
+
+        if ($validator->fails()) {
+            throw new InvalidWebSocketMessageException();
+        }
+    }
 }

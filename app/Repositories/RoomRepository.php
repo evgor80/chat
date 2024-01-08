@@ -40,4 +40,15 @@ class RoomRepository implements IRoomRepository
     {
         return Room::with('messages.author:id,username')->where('name', $name)->first();
     }
+
+    public function createMessage(string $name, string $msg, int $userId)
+    {
+        $room = Room::where('name', $name)->firstOrFail();
+
+        return $room->messages()->create([
+            'user_id' => $userId,
+            'text' => $msg,
+            'type' => 'message'
+        ]);
+    }
 }
