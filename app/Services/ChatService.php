@@ -10,6 +10,12 @@ use App\Facades\JwToken;
 use App\Models\Room;
 use App\DTO\ChatRoomDto;
 use App\Exceptions\NotAuthenticatedException;
+use Ratchet\ConnectionInterface;
+use App\Exceptions\ChatRoomNotFoundException;
+use App\Exceptions\NotAuthorizedException;
+use App\Validation\ChatConnectionValidation;
+use Illuminate\Support\Facades\Hash;
+
 class ChatService implements IChatService
 {
     /**
@@ -53,6 +59,52 @@ class ChatService implements IChatService
     {
         $this->authenticate($token);
         $this->subscribersToUpdates->attach($conn);
+    }
+
+    public function addUser(ConnectionInterface $conn, array $message)
+    {
+        ChatConnectionValidation::validateJoinMessageCompletness($message);
+        $user = $this->authenticate($message['token']);
+        //get current room data from  database
+        $room = $this->getRoom($message['room']);
+        //validate provided password if chat room is private
+        if ($room->private) {
+            $this->authorizeUser($room->password, $message['password']);
+        }
+        $this->addRoomIfDoesntExist($room->name);
+        //add new user to the chat room
+        $this->addUserIfDoesntExist($room->name, $user->username);
+        //add new connection to user's array
+        $this->rooms[$room->name][$user->username]->push($conn);
+        //get a list of currently connected users
+        $connUsers = $this->getConnectedUsers($room->name);
+        //send message about new user's join, only if this is their first entry
+        //don't send the message, if user open the same chat room from several tabs/devices
+        if (count($this->rooms[$room->name][$user->username]) === 1) {
+            //generate a message
+            $msg = json_encode([
+                "type" => 'user-join',
+                'members' => $connUsers,
+                'message' => ['user' => $user->username, 'type' => 'join']
+            ]);
+            //get a list of currently connected sockests
+            $users = $this->rooms[$room->name];
+            //send the message to every connected socket except newly connected user
+            foreach ($users as $username => $connections) {
+                if ($username !== $user->username) {
+                    foreach ($connections as $c) {
+                        $c->send($msg);
+                    }
+                }
+            }
+            $this->notifySubscribersToUpdates($room->name);
+        }
+
+        return [
+            'members' => $connUsers,
+            'messages' => $room->messages
+
+        ];
     }
 
     /**
@@ -122,5 +174,82 @@ class ChatService implements IChatService
         if (!$this->rooms->hasKey($roomname)) {
             $this->rooms->put($roomname, new Map([]));
         }
+    }
+
+    /**
+     * Find and return chat room by specified name. If nothing found, throw exception
+     * 
+     * @param string $roomname
+     * @return \App\Models\Room
+     * @throws \App\Exceptions\ChatRoomNotFoundException
+     */
+    private function getRoom(string $roomname)
+    {
+        $room = $this->roomRepo->findOneByName($roomname);
+        if (is_null($room)) {
+            throw new ChatRoomNotFoundException();
+        }
+
+        return $room;
+    }
+
+    /**
+     * Check that provided password matches to password for private chat room, if not, throw exception
+     * 
+     * @param string $savedPassword
+     * @param string $receivedPassword
+     * @return void
+     * @throws \App\Exceptions\NotAuthorizedException
+     */
+    private function authorizeUser(string $savedPassword, string $receivedPassword)
+    {
+        $isAuthorized = Hash::check($receivedPassword, $savedPassword);
+        //refuse to add new user if password is invalid
+        if (!$isAuthorized) {
+            throw new NotAuthorizedException();
+        }
+    }
+
+    /**
+     * Add user to the  chat room map if they doesnt exist yet
+     * 
+     * @param string $roomname
+     * @param $username
+     * @return void
+     */
+    private function addUserIfDoesntExist(string $roomname, string $username)
+    {
+        if (!$this->rooms[$roomname]->hasKey($username)) {
+            $this->rooms[$roomname]->put($username, new \Ds\Vector([]));
+        }
+    }
+
+    /**
+     * Send subscribers updated info about chat room with specified name
+     * 
+     * @param string $name
+     * @return void
+     */
+    private function notifySubscribersToUpdates(string $name)
+    {
+        $room_info = $this->getRoomInfo($name);
+        $msg = json_encode(["type" => "update", 'room' => $room_info]);
+        //send all subscribers updated info about the chat room 
+        foreach ($this->subscribersToUpdates as $sub) {
+            $sub->send($msg);
+        }
+    }
+
+    /**
+     * Return info about chatroom with specified name, including number of connected users and messages
+     * 
+     * @param string $name
+     * @return \App\DTO\ChatRoomDto
+     */
+    private function getRoomInfo(string $name)
+    {
+        $room = $this->roomRepo->findOneByName($name);
+
+        return $this->mapRoom($room);
     }
 }

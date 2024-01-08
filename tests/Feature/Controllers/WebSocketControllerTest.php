@@ -9,6 +9,8 @@ use App\Models\User;
 use Mockery;
 use App\Facades\JwToken;
 use Ratchet\ConnectionInterface;
+use App\Models\Room;
+use App\Interfaces\IChatService;
 
 class WebSocketControllerTest extends TestCase
 {
@@ -40,6 +42,19 @@ class WebSocketControllerTest extends TestCase
         $this->conn->shouldReceive('close')->once();
         $this->controller->onError($this->conn, new \Exception('Test'));
     }
+
+    public function test_rejects_request_if_exception_was_thrown(): void
+    {
+        $this->mock(IChatService::class)->shouldReceive('subscribeToUpdates')->andThrow(new \Exception());
+        $msg = json_encode(['type' => 'update', 'token' => $this->token]);
+        $this->conn->shouldReceive('send')
+            ->once()
+            ->with(json_encode(["type" => "500"]));
+        $controller = app(WebSocketController::class);
+        $controller->onMessage($this->conn, $msg);
+
+    }
+
     public function test_rejects_request_if_message_type_missing()
     {
         $msg = json_encode(['token' => $this->token]);
@@ -74,6 +89,75 @@ class WebSocketControllerTest extends TestCase
         $this->conn->shouldReceive('send')
             ->once()
             ->with((json_encode(["type" => "all", 'rooms' => []])));
+        $this->controller->onMessage($this->conn, $msg);
+    }
+
+    public function test_rejects_request_if_room_wasnt_found()
+    {
+        $msg = json_encode([
+            'type' => 'user-joined',
+            'room' => 'Main',
+            'password' => '12345678',
+            'token' => $this->token
+        ]);
+        $this->conn->shouldReceive('send')
+            ->once()
+            ->with(json_encode(["type" => "404"]));
+        $this->controller->onMessage($this->conn, $msg);
+    }
+
+    public function test_rejects_request_if_password_for_chatroom_is_wrong()
+    {
+        Room::factory()->create();
+        $msg = json_encode([
+            'type' => 'user-joined',
+            'room' => 'Main',
+            'password' => '123456789',
+            'token' => $this->token
+        ]);
+        $this->conn->shouldReceive('send')
+            ->once()
+            ->with(json_encode(["type" => "access-denied"]));
+        $this->controller->onMessage($this->conn, $msg);
+    }
+
+    public function test_sends_update_on_user_join()
+    {
+        Room::factory()->create();
+        $msg = json_encode(['type' => 'update', 'token' => $this->token]);
+        $this->controller->onMessage($this->conn, $msg);
+        /**
+         * @var \Ratchet\ConnectionInterface&\Mockery\MockInterface $join_conn
+         */
+        $join_conn = Mockery::mock(ConnectionInterface::class);
+        $join_msg = json_encode(['type' => 'user-joined', 'room' => 'Main', 'password' => '12345678', 'token' => $this->token]);
+        $this->conn->shouldReceive('send')
+            ->once()
+            ->withArgs(
+                function ($arg) {
+                    return str_contains($arg, '"type":"update","room":{"id":1,"name":"Main","slug":"main","private":true,"messages":0,"members":1');
+                }
+            );
+        $join_conn->shouldReceive('send')->once();
+        $this->controller->onMessage($join_conn, $join_msg);
+    }
+
+    public function test_returns_room_info_when_user_joining(): void
+    {
+        Room::factory()->create();
+        $msg = json_encode([
+            'type' => 'user-joined',
+            'room' => 'Main',
+            'password' => '12345678',
+            'token' => $this->token
+        ]);
+        $this->conn->shouldReceive('send')
+            ->once()
+            ->with(json_encode([
+                "type" => 'welcome',
+                'members' => ['test'],
+                'messages' => []
+            ]));
         $this->controller->onMessage($this->conn, $msg);
     }
 }

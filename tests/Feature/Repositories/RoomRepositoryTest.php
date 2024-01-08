@@ -80,4 +80,18 @@ class RoomRepositoryTest extends TestCase
         $this->assertCount(3, $rooms);
         $this->assertCount(1, $rooms[0]->messages);
     }
+
+    public function test_finds_one_by_name(): void
+    {
+        Room::factory()->create();
+        $room = $this->repo->findOneByName('Main');
+        $this->assertEquals('Main', $room->name);
+        $this->assertEquals(1, $room->id);
+    }
+
+    public function test_returns_null_if_room_wasnt_found_by_name()
+    {
+        $room = $this->repo->findOneByName('test');
+        $this->assertNull($room);
+    }
 }

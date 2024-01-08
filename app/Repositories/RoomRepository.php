@@ -35,4 +35,9 @@ class RoomRepository implements IRoomRepository
     {
         return Room::withCount('messages')->get();
     }
+
+    public function findOneByName(string $name)
+    {
+        return Room::with('messages.author:id,username')->where('name', $name)->first();
+    }
 }

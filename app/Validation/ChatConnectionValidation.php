@@ -26,4 +26,23 @@ class ChatConnectionValidation
             throw new InvalidWebSocketMessageException();
         }
     }
+
+    /**
+     * Validate that a user joinig a room provides all required information
+     * 
+     * @param array $message
+     * @return void
+     * @throws \App\Exceptions\InvalidWebSocketMessageException
+     */
+    public static function validateJoinMessageCompletness(array $message)
+    {
+        $validator = Validator::make($message, [
+            'room' => 'required|string',
+            'password' => 'present|string',
+        ]);
+
+        if ($validator->fails()) {
+            throw new InvalidWebSocketMessageException();
+        }
+    }
 }

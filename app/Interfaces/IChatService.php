@@ -22,4 +22,17 @@ interface IChatService
      * @return void
      */
     public function subscribeToUpdates(ConnectionInterface $conn, string $token);
+
+    /**
+     * Connect a user to specified room (if they is authorized) and notify other users in this chat room about new user. Return data about chat room, users online and messages.
+     * If requested room wasn't found, throw exception
+     * If chat room is protected with password and wrong password was provided, throw exception
+     * 
+     * @param \Ratchet\ConnectionInterface $conn New user socket
+     * @param array $message Decoded JSON message object received from client
+     * @return array<string, mixed>
+     * @throws \App\Exceptions\ChatRoomNotFoundException
+     * @throws \App\Exceptions\NotAuthorizedException
+     */
+    public function addUser(ConnectionInterface $conn, array $message);
 }

@@ -37,4 +37,12 @@ interface IRoomRepository
      * @return \Illuminate\Support\Collection<\App\Models\Room|null>
      */
     public function getAll();
+
+    /**
+     * Find a room by specified name
+     * 
+     * @param string $name
+     * @return \App\Models\Room|null
+     */
+    public function findOneByName(string $name);
 }

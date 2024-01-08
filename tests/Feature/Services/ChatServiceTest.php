@@ -11,6 +11,10 @@ use App\Exceptions\NotAuthenticatedException;
 use Carbon\Carbon;
 use App\Models\Room;
 use App\DTO\ChatRoomDto;
+use App\Exceptions\NotAuthorizedException;
+use App\Exceptions\ChatRoomNotFoundException;
+use Mockery;
+use Ratchet\ConnectionInterface;
 
 class ChatServiceTest extends TestCase
 {
@@ -68,5 +72,152 @@ class ChatServiceTest extends TestCase
         $this->assertCount(3, $rooms);
         $this->assertInstanceOf(ChatRoomDto::class, $rooms[0]);
         $this->assertEquals(1, $rooms[0]->messages);
+    }
+
+    public function test_adds_user(): void
+    {
+        $room = Room::factory()->create();
+        $room->messages()->create(['user_id' => 1, 'type' => 'message', 'text' => 'test']);
+        $conn = Mockery::mock(ConnectionInterface::class);
+        $msg = [
+            'token' => $this->token,
+            'room' => 'Main',
+            'password' => '12345678'
+        ];
+        $results = $this->service->addUser($conn, $msg);
+        $this->assertCount(1, $results['members']);
+        $this->assertEquals('test', $results['members'][0]);
+        $this->assertCount(1, $results['messages']);
+        $this->assertEquals('test', $results['messages'][0]['author']['username']);
+        $this->assertEquals(1, $results['messages'][0]['author']['id']);
+        $this->assertEquals('test', $results['messages'][0]['text']);
+    }
+
+    public function test_throws_exception_if_password_for_chatroom_is_invalid(): void
+    {
+        try {
+            Room::factory()->create();
+            $conn = Mockery::mock(ConnectionInterface::class);
+            $msg = [
+                'token' => $this->token,
+                'room' => 'Main',
+                'password' => '123456789'
+            ];
+            $this->service->addUser($conn, $msg);
+        } catch (NotAuthorizedException $e) {
+            $this->assertInstanceOf(NotAuthorizedException::class, $e);
+        }
+    }
+
+    public function test_throws_exception_if_chatroom_doesnt_exist(): void
+    {
+        try {
+            $conn = Mockery::mock(ConnectionInterface::class);
+            $msg = [
+                'token' => $this->token,
+                'room' => 'Main',
+                'password' => '123456789'
+            ];
+            $this->service->addUser($conn, $msg);
+        } catch (ChatRoomNotFoundException $e) {
+            $this->assertInstanceOf(ChatRoomNotFoundException::class, $e);
+        }
+
+    }
+
+    public function test_notifies_subscriber_about_update(): void
+    {
+        Room::factory()->create();
+        $user = User::factory()->create(['username' => 'test11']);
+        $token = JwToken::generateJwt($user);
+        /**
+         * @var \Ratchet\ConnectionInterface&\Mockery\MockInterface $conn
+         */
+        $conn = Mockery::mock(ConnectionInterface::class);
+        $this->service->subscribeToUpdates($conn, $token);
+        $conn1 = Mockery::mock(ConnectionInterface::class);
+        $conn->shouldReceive('send')->once()->withArgs(function ($arg) {
+            return str_contains($arg, '"type":"update"') &&
+                str_contains($arg, '"room":{"id":1,"name":"Main","slug":"main","private":true,"messages":0,"members":1');
+        });
+        $msg = [
+            'token' => $this->token,
+            'room' => 'Main',
+            'password' => '12345678'
+        ];
+        $this->service->addUser($conn1, $msg);
+    }
+
+    public function test_informs_other_users_in_chatroom_about_new_user(): void
+    {
+        Room::factory()->create();
+        $user = User::factory()->create(['username' => 'test11']);
+        $token = JwToken::generateJwt($user);
+        /**
+         * @var \Ratchet\ConnectionInterface&\Mockery\MockInterface $conn
+         */
+        $conn = Mockery::mock(ConnectionInterface::class);
+        $msg = [
+            'token' => $token,
+            'room' => 'Main',
+            'password' => '12345678'
+        ];
+        $this->service->addUser($conn, $msg);
+        $conn1 = Mockery::mock(ConnectionInterface::class);
+        $msg1 = [
+            'token' => $this->token,
+            'room' => 'Main',
+            'password' => '12345678'
+        ];
+        $conn->shouldReceive('send')->once()
+            ->with(json_encode([
+                "type" => 'user-join',
+                'members' => ['test11', 'test'],
+                'message' => ['user' => 'test', 'type' => 'join']
+            ]));
+        $this->service->addUser($conn1, $msg1);
+    }
+
+    public function test_doesnt_inform_other_users_in_chatroom_about_another_connection_from_same_user(): void
+    {
+        Room::factory()->create();
+        $user = User::factory()->create(['username' => 'test11']);
+        $token = JwToken::generateJwt($user);
+        /**
+         * @var \Ratchet\ConnectionInterface&\Mockery\MockInterface $conn
+         */
+        $conn = Mockery::mock(ConnectionInterface::class);
+        $msg = [
+            'token' => $token,
+            'room' => 'Main',
+            'password' => '12345678'
+        ];
+        $this->service->addUser($conn, $msg);
+        $conn1 = Mockery::mock(ConnectionInterface::class);
+        $msg1 = [
+            'token' => $this->token,
+            'room' => 'Main',
+            'password' => '12345678'
+        ];
+        $conn->shouldReceive('send')->once();
+        $this->service->addUser($conn1, $msg1);
+        $conn2 = Mockery::mock(ConnectionInterface::class);
+        $this->service->addUser($conn2, $msg1);
+    }
+
+    public function test_doesnt_inform_users_about_their_own_join(): void
+    {
+        Room::factory()->create();
+        /**
+         * @var \Ratchet\ConnectionInterface&\Mockery\MockInterface $conn
+         */
+        $conn = Mockery::mock(ConnectionInterface::class);
+        $msg = [
+            'token' => $this->token,
+            'room' => 'Main',
+            'password' => '12345678'
+        ];
+        $conn->shouldReceive('send')->never();
+        $this->service->addUser($conn, $msg);
     }
 }
