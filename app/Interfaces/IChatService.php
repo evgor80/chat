@@ -13,4 +13,13 @@ interface IChatService
      * @return \Illuminate\Support\Collection<\App\DTO\ChatRoomDto>
      */
     public function getAllRooms(string $token);
+
+    /**
+     * Subscribe a user to updated info about chat rooms
+     * 
+     * @param \Ratchet\ConnectionInterface $conn
+     * @param string $token
+     * @return void
+     */
+    public function subscribeToUpdates(ConnectionInterface $conn, string $token);
 }

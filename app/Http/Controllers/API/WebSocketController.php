@@ -40,6 +40,9 @@ class WebSocketController extends Controller implements MessageComponentInterfac
                 //if a user wants to get a list of all chat rooms
                 $rooms = $this->chatService->getAllRooms($message['token']);
                 $from->send(json_encode(["type" => "all", 'rooms' => $rooms]));
+            } elseif ($message['type'] == "update") {
+                //subscribe a user to updates
+                $this->chatService->subscribeToUpdates($from, $message['token']);
             }        
         } catch (NotAuthenticatedException $e) {
             $from->send(json_encode(["type" => "401"]));

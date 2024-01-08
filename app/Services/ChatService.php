@@ -49,6 +49,12 @@ class ChatService implements IChatService
         });
     }
 
+    public function subscribeToUpdates(ConnectionInterface $conn, string $token)
+    {
+        $this->authenticate($token);
+        $this->subscribersToUpdates->attach($conn);
+    }
+
     /**
      * Check that jwt-token is valid and find and return a user by id from the token
      * 
