@@ -1,0 +1,1 @@
+import{_ as o}from"./_plugin-vue_export-helper-c27b6911.js";import{o as e,c as t,f as n}from"./index-8b280c30.js";const _={},s={class:"not-found__container"},c=n("div",{class:"not-found"},"404 | Ничего не найдено",-1),a=[c];function r(d,i){return e(),t("div",s,a)}const l=o(_,[["render",r]]);export{l as default};
