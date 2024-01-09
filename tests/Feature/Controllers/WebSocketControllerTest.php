@@ -194,4 +194,46 @@ class WebSocketControllerTest extends TestCase
             });
         $this->controller->onMessage($this->conn, $new_msg);
     }
+
+    public function test_emits_typing_event(): void
+    {
+        Room::factory()->create();
+        $user = User::factory()->create(['username' => 'test11']);
+        $token = JwToken::generateJwt($user);
+        /**
+         * @var \Ratchet\ConnectionInterface&\Mockery\MockInterface $conn
+         */
+        $conn = Mockery::mock(ConnectionInterface::class);
+        $msg = json_encode([
+            'type' => 'user-joined',
+            'room' => 'Main',
+            'password' => '12345678',
+            'token' => $token
+        ]);
+        $conn->shouldReceive('send')
+            ->once();
+        $this->controller->onMessage($conn, $msg);
+        $msg1 = json_encode([
+            'type' => 'user-joined',
+            'room' => 'Main',
+            'password' => '12345678',
+            'token' => $this->token
+        ]);
+        $conn->shouldReceive('send')
+            ->once();
+        $this->conn->shouldReceive('send')
+            ->once();
+        $this->controller->onMessage($this->conn, $msg1);
+        $conn->shouldReceive('send')
+            ->once()
+            ->with(json_encode([
+                'type' => 'user-typing',
+                'user' => 'test'
+            ]));
+        $this->controller->onMessage($this->conn, json_encode([
+            'type' => 'user-typing',
+            'token' => $this->token,
+            'room' => 'Main'
+        ]));
+    }
 }

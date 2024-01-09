@@ -53,4 +53,14 @@ interface IChatService
      * @throws \App\Exceptions\InvalidAuthorException
      */
     public function addMessage(array $msg);
+
+    /**
+     * Inform other users connected to specified chat room that this user is typing
+     * If message's username doesn't match to user's one or the user is not connected to specified room, throw exception
+     * 
+     * @param array $msg Decoded message from client
+     * @return void
+     * @throws \App\Exceptions\InvalidAuthorException
+     */
+    public function emitTypingEvent(array $msg);
 }

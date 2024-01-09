@@ -89,4 +89,14 @@ class ChatConnectionValidationTest extends TestCase
             $this->fail();
         }
     }
+
+    public function test_throws_exception_if_room_name_missing_for_typing_event(): void
+    {
+        try {
+            ChatConnectionValidation::validateTypingEventMessageCompletness([]);
+            $this->fail("Exception wasn't thrown");
+        } catch (InvalidWebSocketMessageException $e) {
+            $this->assertInstanceOf(InvalidWebSocketMessageException::class, $e);
+        }
+    }
 }

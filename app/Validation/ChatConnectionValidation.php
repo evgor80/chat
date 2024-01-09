@@ -64,4 +64,22 @@ class ChatConnectionValidation
             throw new InvalidWebSocketMessageException();
         }
     }
+
+    /**
+     * Validate that room specified where user is typing
+     * 
+     * @param array $message Decoded JSON message object from client socket
+     * @return void
+     * @throws \App\Exceptions\InvalidWebSocketMessageException
+     */
+    public static function validateTypingEventMessageCompletness(array $message)
+    {
+        $validator = Validator::make($message, [
+            'room' => 'required|string',
+        ]);
+
+        if ($validator->fails()) {
+            throw new InvalidWebSocketMessageException();
+        }
+    }
 }

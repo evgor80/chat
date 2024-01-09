@@ -64,7 +64,10 @@ class WebSocketController extends Controller implements MessageComponentInterfac
             } elseif ($message['type'] == "message") {
                 //If user sends a message to ceratin room
                 $this->chatService->addMessage($message);
-            }        
+            } elseif ($message['type'] == "user-typing") {
+                //If user is typing, inform other users in the chat room about this event
+                $this->chatService->emitTypingEvent($message);
+            }
         } catch (NotAuthenticatedException |
             InvalidAuthorException $e) {
             $from->send(json_encode(["type" => "401"]));

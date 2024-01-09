@@ -186,6 +186,27 @@ class ChatService implements IChatService
         $this->notifySubscribersToUpdates($msg['room']);
     }
 
+    public function emitTypingEvent(array $msg)
+    {
+        ChatConnectionValidation::validateTypingEventMessageCompletness($msg);
+        $user = $this->authenticate($msg['token']);
+        $roomname = $msg['room'];
+        $this->validateUser($user, $roomname);
+
+        $newMsg = json_encode([
+            'type' => 'user-typing',
+            'user' => $user->username
+        ]);
+        //inform all other users in the chat room about typing event
+        foreach ($this->rooms[$roomname] as $name => $connections) {
+            if ($name !== $user->username) {
+                foreach ($connections as $c) {
+                    $c->send($newMsg);
+                }
+            }
+        }
+    }
+
     /**
      * Check that jwt-token is valid and find and return a user by id from the token
      * 

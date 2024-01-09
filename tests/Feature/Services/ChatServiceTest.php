@@ -329,4 +329,72 @@ class ChatServiceTest extends TestCase
             $this->assertInstanceOf(InvalidAuthorException::class, $e);
         }
     }
+
+    public function test_emits_typing_event(): void
+    {
+        Room::factory()->create();
+        $user = User::factory()->create(['username' => 'test11']);
+        $token = JwToken::generateJwt($user);
+        /**
+         * @var \Ratchet\ConnectionInterface&\Mockery\MockInterface $conn
+         */
+        $conn = Mockery::mock(ConnectionInterface::class);
+        $msg = [
+            'token' => $token,
+            'room' => 'Main',
+            'password' => '12345678'
+        ];
+        $this->service->addUser($conn, $msg);
+        $conn->shouldReceive('send')->once();
+        /**
+         * @var \Ratchet\ConnectionInterface&\Mockery\MockInterface $conn1
+         */
+        $conn1 = Mockery::mock(ConnectionInterface::class);
+        $msg1 = [
+            'token' => $this->token,
+            'room' => 'Main',
+            'password' => '12345678'
+        ];
+        $this->service->addUser($conn1, $msg1);
+        $conn1->shouldReceive('send')->once()->with(json_encode([
+            'type' => 'user-typing',
+            'user' => 'test11'
+        ]));
+        $this->service->emitTypingEvent([
+            'token' => $token,
+            'room' => 'Main'
+        ]);
+    }
+
+    public function test_doesnt_emit_typing_event_and_throws_exception_if_user_didnt_enter_chatroom(): void
+    {
+        try {
+            $this->service->emitTypingEvent([
+                'token' => $this->token,
+                'room' => 'Main'
+            ]);
+        } catch (InvalidAuthorException $e) {
+            $this->assertInstanceOf(InvalidAuthorException::class, $e);
+        }
+    }
+
+    public function test_doesnt_emit_typing_event_to_typing_user(): void
+    {
+        Room::factory()->create();
+        /**
+         * @var \Ratchet\ConnectionInterface&\Mockery\MockInterface $conn
+         */
+        $conn = Mockery::mock(ConnectionInterface::class);
+        $msg = [
+            'token' => $this->token,
+            'room' => 'Main',
+            'password' => '12345678'
+        ];
+        $this->service->addUser($conn, $msg);
+        $conn->shouldReceive('send')->never();
+        $this->service->emitTypingEvent([
+            'token' => $this->token,
+            'room' => 'Main'
+        ]);
+    }
 }
